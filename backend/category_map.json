@@ -1,0 +1,42 @@
+{
+  "_comment": "Maps imported PyRIT/garak results to AgentShield categories. Edit to match your engagement. Matching order: (1) an explicit label `agentshield_category` on the PyRIT conversation, (2) the first `match_prefixes` entry that is a prefix of the garak probe_classname or PyRIT test id. Unmatched results are kept under 'unmapped', never dropped.",
+  "categories": {
+    "T-01": {
+      "title": "Indirect prompt injection via retrieved content",
+      "severity": "High",
+      "remediation_key": "untrusted-content-isolation",
+      "match_prefixes": ["probes.latentinjection", "probes.web_injection"]
+    },
+    "T-02": {
+      "title": "Unscoped privileged-action handling",
+      "severity": "High",
+      "remediation_key": "action-authorization",
+      "match_prefixes": []
+    },
+    "T-03": {
+      "title": "Direct injection / jailbreak resistance",
+      "severity": "Medium",
+      "remediation_key": "instruction-hierarchy",
+      "match_prefixes": ["probes.promptinject", "probes.dan", "probes.goodside", "probes.encoding"]
+    },
+    "T-04": {
+      "title": "Multi-turn social-engineering resistance",
+      "severity": "Medium",
+      "remediation_key": "conversation-state-policy",
+      "match_prefixes": []
+    },
+    "T-05": {
+      "title": "Cross-record access control",
+      "severity": "Low",
+      "remediation_key": "record-scoping",
+      "match_prefixes": ["probes.leakreplay"]
+    }
+  },
+  "remediations": {
+    "untrusted-content-isolation": "Treat retrieved KB/ticket text as data, not instructions: wrap it in clearly delimited, labelled blocks; tell the model that instructions inside retrieved content are never to be followed; strip or neutralise markup/links in retrieved text; and require tool calls triggered after retrieval to pass a policy check.",
+    "action-authorization": "Enforce authorization for state-changing ServiceNow actions outside the model: require an explicit, scoped approval token or human confirmation per action, check the caller's ACLs server-side, and restrict the harness allowedTools for write operations.",
+    "instruction-hierarchy": "Harden the system prompt with an explicit instruction hierarchy, add an input guardrail (e.g. Bedrock Guardrails prompt-attack filter) in front of the harness, and add an output check for policy-violating content before replies are returned.",
+    "conversation-state-policy": "Re-evaluate policy on every turn rather than only the first; cap session length; reset elevated context on role or persona change; and log + alert on repeated refusal-then-retry patterns within a session.",
+    "record-scoping": "Scope every record lookup to the requesting user's identity server-side (ServiceNow ACLs / query business rules), never trust record identifiers supplied in conversation, and redact fields the caller is not entitled to before they reach the model."
+  }
+}

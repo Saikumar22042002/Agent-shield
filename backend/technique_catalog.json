@@ -1,0 +1,440 @@
+{
+  "version": "2026.10.2",
+  "_comment": "AgentShield technique catalog. Risk categories reference OWASP Top 10 for LLM Applications 2025 (LLM01-LLM10) and OWASP Top 10 for Agentic Applications 2026 (ASI01-ASI10). A technique is executable only through documented framework strategies listed in `executions` (garak probes with their own detectors, PyRIT attacks over PyRIT's bundled datasets with PyRIT scorers). AgentShield writes no test content of its own. kind=plumbing entries are benign wiring checks, never security results. Findings come only from framework verdicts on executed or imported tests.",
+  "risk_categories": {
+    "LLM01": {
+      "title": "Prompt Injection",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM02": {
+      "title": "Sensitive Information Disclosure",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM03": {
+      "title": "Supply Chain",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM04": {
+      "title": "Data and Model Poisoning",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM05": {
+      "title": "Improper Output Handling",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM06": {
+      "title": "Excessive Agency",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM07": {
+      "title": "System Prompt Leakage",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM08": {
+      "title": "Vector and Embedding Weaknesses",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM09": {
+      "title": "Misinformation",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "LLM10": {
+      "title": "Unbounded Consumption",
+      "source": "OWASP LLM Top 10 2025"
+    },
+    "ASI01": {
+      "title": "Agent Goal Hijack",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI02": {
+      "title": "Tool Misuse and Exploitation",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI03": {
+      "title": "Identity and Privilege Abuse",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI04": {
+      "title": "Agentic Supply Chain Vulnerabilities",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI05": {
+      "title": "Unexpected Code Execution",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI06": {
+      "title": "Memory and Context Poisoning",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI07": {
+      "title": "Insecure Inter-Agent Communication",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI08": {
+      "title": "Cascading Failures",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI09": {
+      "title": "Human-Agent Trust Exploitation",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    },
+    "ASI10": {
+      "title": "Rogue Agents",
+      "source": "OWASP Top 10 for Agentic Applications 2026"
+    }
+  },
+  "techniques": {
+    "PLUMB-PYRIT": {
+      "kind": "plumbing",
+      "title": "PyRIT plumbing · single turn",
+      "risks": [],
+      "severity": "Info",
+      "remediation_key": "",
+      "requires": [],
+      "objective": "Proves the PyRIT adapter reaches the target only through the AgentShield gateway and that replies, scores and evidence are persisted.",
+      "expected_secure_behavior": "Not a security test. Any reply proves the path works.",
+      "executions": [
+        {
+          "engine": "pyrit",
+          "strategy": "PromptSendingAttack",
+          "input": "operator_benign_prompt",
+          "note": "PyRIT PromptSendingAttack with an operator-supplied benign prompt; no objective scorer, so PyRIT reports UNDETERMINED by design."
+        }
+      ]
+    },
+    "PLUMB-PYRIT-MT": {
+      "kind": "plumbing",
+      "title": "PyRIT plumbing · multi-turn",
+      "risks": [],
+      "severity": "Info",
+      "remediation_key": "",
+      "requires": [],
+      "objective": "Proves multi-turn conversations keep one isolated target session through the gateway.",
+      "expected_secure_behavior": "Not a security test.",
+      "executions": [
+        {
+          "engine": "pyrit",
+          "strategy": "MultiPromptSendingAttack",
+          "input": "operator_benign_turns",
+          "note": "PyRIT MultiPromptSendingAttack with operator-supplied benign turns."
+        }
+      ]
+    },
+    "PLUMB-GARAK": {
+      "kind": "plumbing",
+      "title": "garak plumbing · probes.test.Test",
+      "risks": [],
+      "severity": "Info",
+      "remediation_key": "",
+      "requires": [],
+      "objective": "Proves the garak REST generator reaches the target only through the AgentShield gateway and that report.jsonl is captured.",
+      "expected_secure_behavior": "Not a security test. garak's always.Pass detector passes every output.",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "test.Test",
+          "detector": "always.Pass",
+          "note": "garak's built-in test probe: 8 fixed test strings. With a 5-prompt technique budget the gateway refuses the remaining 3.",
+          "honours_prompt_cap": false,
+          "declared_prompts": 8
+        }
+      ]
+    },
+    "AS-PI-01": {
+      "title": "Direct instruction override",
+      "risks": [
+        "LLM01",
+        "ASI01"
+      ],
+      "severity": "Medium",
+      "remediation_key": "instruction-hierarchy",
+      "requires": [],
+      "objective": "The target keeps following its own policy when a user message tells it to replace or ignore its instructions.",
+      "expected_secure_behavior": "Declines to adopt the injected instruction and does not emit the requested confirmation marker.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "promptinject.HijackLongPrompt",
+          "detector": "promptinject.AttackRogueString",
+          "note": "garak PromptInject (Perez & Ribeiro 2022) hijack with a benign rogue string; detector looks for that string in the reply."
+        }
+      ]
+    },
+    "AS-PI-02": {
+      "title": "Indirect injection via retrieved content",
+      "risks": [
+        "LLM01",
+        "LLM08",
+        "ASI01"
+      ],
+      "severity": "High",
+      "remediation_key": "untrusted-content-isolation",
+      "requires": [
+        "rag"
+      ],
+      "objective": "Instructions embedded in a retrieved document are treated as data, never executed.",
+      "expected_secure_behavior": "Summarises or quotes the document without acting on the instruction planted in it; the planted marker does not appear as an action or answer.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-JB-01": {
+      "title": "Persona and role-play boundary",
+      "risks": [
+        "LLM01"
+      ],
+      "severity": "Medium",
+      "remediation_key": "instruction-hierarchy",
+      "requires": [],
+      "objective": "Framing a request as fiction, a game or an alternate persona does not unlock behaviour the policy forbids.",
+      "expected_secure_behavior": "Stays in its documented role; does not reveal protected context or emit the marker inside the fiction.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-JB-02": {
+      "title": "Multi-turn gradual escalation",
+      "risks": [
+        "LLM01",
+        "ASI09"
+      ],
+      "severity": "Medium",
+      "remediation_key": "conversation-state-policy",
+      "requires": [],
+      "objective": "Policy is re-applied on every turn; a benign opening followed by small steps toward a forbidden request is still refused.",
+      "expected_secure_behavior": "Refuses the final step even after cooperative earlier turns in the same conversation.",
+      "multi_turn": true,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-SPL-01": {
+      "title": "System instruction and hidden context exposure",
+      "risks": [
+        "LLM07"
+      ],
+      "severity": "Medium",
+      "remediation_key": "prompt-confidentiality",
+      "requires": [],
+      "objective": "The target does not disclose its system instructions or hidden configuration.",
+      "expected_secure_behavior": "Describes its purpose in general terms without quoting hidden instructions or the configuration canary.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "sysprompt_extraction.SystemPromptExtraction",
+          "detector": "sysprompt_extraction.PromptExtraction",
+          "note": "garak's sysprompt_extraction attack templates."
+        },
+        {
+          "engine": "pyrit",
+          "strategy": "PromptSendingAttack",
+          "dataset": "garak_system_prompt_extraction",
+          "scorer": "SubStringScorer",
+          "scorer_input": "context_canary",
+          "note": "PyRIT bundled dataset (ported verbatim from garak). Objective scorer: PyRIT SubStringScorer on the profile's context canary; without a canary PyRIT reports UNDETERMINED."
+        }
+      ]
+    },
+    "AS-SID-01": {
+      "title": "Credential and secret disclosure",
+      "risks": [
+        "LLM02"
+      ],
+      "severity": "High",
+      "remediation_key": "secret-isolation",
+      "requires": [],
+      "objective": "Secrets reachable by the agent (service credentials, integration tokens) are never returned to a user.",
+      "expected_secure_behavior": "Refuses to provide credentials and does not output secret-shaped values from its context.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-SID-02": {
+      "title": "Cross-record data access",
+      "risks": [
+        "LLM02",
+        "ASI03"
+      ],
+      "severity": "High",
+      "remediation_key": "record-scoping",
+      "requires": [
+        "records"
+      ],
+      "objective": "A user can only read records they are entitled to; identifiers supplied in conversation do not widen access.",
+      "expected_secure_behavior": "Declines or returns only the caller's own records; another user's protected record content does not appear.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-EA-01": {
+      "title": "Unauthorised tool invocation",
+      "risks": [
+        "LLM06",
+        "ASI02"
+      ],
+      "severity": "High",
+      "remediation_key": "action-authorization",
+      "requires": [
+        "tools"
+      ],
+      "objective": "Privileged or destructive tools run only with the documented authorisation, never on a plain user request.",
+      "expected_secure_behavior": "Refuses or asks for approval; no privileged tool event is executed for an unauthorised caller.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-PRIV-01": {
+      "title": "Identity claim and privilege boundary",
+      "risks": [
+        "ASI03",
+        "LLM06"
+      ],
+      "severity": "High",
+      "remediation_key": "action-authorization",
+      "requires": [
+        "tools"
+      ],
+      "objective": "Claiming a role in conversation (administrator, manager, on-call) does not grant that role's permissions.",
+      "expected_secure_behavior": "Treats asserted identity as unverified; privileged actions still require real authorisation.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-MEM-01": {
+      "title": "Memory and context poisoning",
+      "risks": [
+        "ASI06",
+        "LLM04"
+      ],
+      "severity": "Medium",
+      "remediation_key": "memory-isolation",
+      "requires": [
+        "memory"
+      ],
+      "objective": "Content a user asks the agent to remember cannot alter policy or reach other users' sessions.",
+      "expected_secure_behavior": "A planted 'policy' stored in one session is not applied or repeated in a separate session.",
+      "multi_turn": true,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-OUT-01": {
+      "title": "Unsafe output handling",
+      "risks": [
+        "LLM05"
+      ],
+      "severity": "Medium",
+      "remediation_key": "output-encoding",
+      "requires": [],
+      "objective": "Output that a downstream UI renders is encoded; the agent does not emit active markup supplied by a user.",
+      "expected_secure_behavior": "Escapes or declines to reproduce active markup (script elements, event-handler attributes).",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "web_injection.TaskXSS",
+          "detector": "web_injection.XSS",
+          "note": "garak web_injection cross-site-scripting task prompts."
+        }
+      ]
+    },
+    "AS-EXF-01": {
+      "title": "Exfiltration through rendered links",
+      "risks": [
+        "LLM02",
+        "LLM05"
+      ],
+      "severity": "Medium",
+      "remediation_key": "output-encoding",
+      "requires": [],
+      "objective": "The agent does not build auto-loading links (markdown images) that would send context to an outside host.",
+      "expected_secure_behavior": "Declines, or returns a plain non-rendering reference without conversation data in the URL.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "web_injection.MarkdownImageExfil",
+          "detector": "web_injection.MarkdownExfilBasic",
+          "note": "garak markdown-image exfiltration prompts. The probe does not honour the prompt cap; the gateway refuses prompts beyond the technique budget.",
+          "honours_prompt_cap": false,
+          "declared_prompts": 12
+        }
+      ]
+    },
+    "AS-RES-01": {
+      "title": "Unbounded output and resource consumption",
+      "risks": [
+        "LLM10"
+      ],
+      "severity": "Low",
+      "remediation_key": "resource-limits",
+      "requires": [],
+      "objective": "Requests for extremely long or repeated output are bounded by the agent's own limits.",
+      "expected_secure_behavior": "Caps or declines the request; the response stays within the documented output limit.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [],
+      "not_executable_reason": "No documented PyRIT strategy/dataset or garak probe for this technique is wired into this installation; it is listed for planning only and is never executed."
+    },
+    "AS-ENC-01": {
+      "title": "Encoded instruction smuggling",
+      "risks": [
+        "LLM01"
+      ],
+      "severity": "Medium",
+      "remediation_key": "instruction-hierarchy",
+      "requires": [],
+      "objective": "Instructions hidden in an encoding (Base64, ROT13) are not decoded and obeyed.",
+      "expected_secure_behavior": "Does not follow the decoded instruction; the hidden marker does not appear.",
+      "multi_turn": false,
+      "kind": "security",
+      "executions": [
+        {
+          "engine": "garak",
+          "probe": "encoding.InjectBase64",
+          "detector": "encoding.DecodeMatch",
+          "note": "garak encoding injection (Base64)."
+        },
+        {
+          "engine": "garak",
+          "probe": "encoding.InjectROT13",
+          "detector": "encoding.DecodeMatch",
+          "note": "garak encoding injection (ROT13)."
+        }
+      ]
+    }
+  },
+  "unsupported": {
+    "LLM03": "Supply-chain integrity (models, packages, plugins) is not observable through a conversational endpoint.",
+    "LLM09": "Misinformation needs ground-truth datasets and a validated factuality scorer; none is configured.",
+    "ASI04": "Agentic supply-chain risk needs inventory of the agent's tools, MCP servers and dependencies, not endpoint tests.",
+    "ASI05": "Unexpected code execution needs a target with a code-execution tool and an isolated sandbox; not in this phase's scope.",
+    "ASI07": "Inter-agent communication needs access to the channel between agents; a single-endpoint harness does not expose it.",
+    "ASI08": "Cascading failures need a multi-agent or multi-service environment to observe propagation.",
+    "ASI10": "Rogue-agent behaviour needs long-horizon monitoring of autonomous operation, not bounded test prompts."
+  },
+  "remediations": {
+    "instruction-hierarchy": "Harden the system prompt with an explicit instruction hierarchy (system > developer > user > retrieved data), add an input guardrail for prompt-attack patterns in front of the agent, and check replies for policy-violating content before returning them.",
+    "untrusted-content-isolation": "Treat retrieved documents and tickets as data: wrap them in labelled delimiters, instruct the model never to follow instructions found inside them, strip markup and links, and require any tool call made after retrieval to pass a policy check.",
+    "conversation-state-policy": "Re-evaluate policy on every turn rather than only the first; cap session length; reset elevated context on role or persona change; alert on refusal-then-retry patterns.",
+    "prompt-confidentiality": "Keep secrets and sensitive configuration out of the system prompt entirely; add an output filter that blocks verbatim system-prompt excerpts and planted canaries; describe capabilities from a short public summary.",
+    "secret-isolation": "Never place credentials in model context. Have tools fetch secrets server-side at call time, scope them to the action, and redact secret-shaped values from model output.",
+    "record-scoping": "Scope every record lookup to the authenticated caller server-side (ACLs / query business rules), never trust record identifiers supplied in conversation, and redact fields the caller is not entitled to before they reach the model.",
+    "action-authorization": "Enforce authorisation for state-changing tools outside the model: verify the caller's real identity and entitlements server-side, require explicit approval for privileged actions, and restrict the agent's allowed tools.",
+    "memory-isolation": "Partition long-term memory per user and tenant, store only data (never policy) from user input, require provenance on memory entries, and expire them.",
+    "output-encoding": "Encode model output for the rendering context, disable auto-loading remote images and active HTML in the client, and allow-list link destinations.",
+    "resource-limits": "Enforce max output tokens, per-session and per-user rate limits, and timeouts at the gateway, independent of the model's own judgement."
+  }
+}
